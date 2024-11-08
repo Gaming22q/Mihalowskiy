@@ -26,8 +26,8 @@
 
 import tkinter as tk
 from tkinter import ttk
-from tkinter import filedialog
 import pandas as pd
+from tkinter import filedialog
 
 class DataAnalyzer:
     def __init__(self, master):
@@ -36,118 +36,110 @@ class DataAnalyzer:
 
         # Фрейм для загрузки файла
         self.file_frame = tk.Frame(master)
-        self.file_frame.pack()
+        self.file_frame.pack(pady=10)
 
+        # Кнопка загрузки файла
         self.load_button = tk.Button(self.file_frame, text="Загрузить файл", command=self.load_data)
         self.load_button.pack(side=tk.LEFT)
 
-        # Фрейм для таблицы
-        self.table_frame = tk.Frame(master)
-        self.table_frame.pack()
+        # Фрейм для таблицы данных
+        self.data_frame = tk.Frame(master)
+        self.data_frame.pack()
 
-        self.tree = ttk.Treeview(self.table_frame, columns=("Column1", "Column2", "Column3"), show="headings")
-        self.tree.heading("Column1", text="Столбец 1")
-        self.tree.heading("Column2", text="Столбец 2")
-        self.tree.heading("Column3", text="Столбец 3")
-        self.tree.pack()
+        # Создание Treeview
+        self.data_tree = ttk.Treeview(self.data_frame, columns=("Column 1", "Column 2", "Column 3"), show="headings")
+        self.data_tree.heading("Column 1", text="Column 1")
+        self.data_tree.heading("Column 2", text="Column 2")
+        self.data_tree.heading("Column 3", text="Column 3")
+        self.data_tree.pack()
 
-        # Фрейм для галочек
-        self.checkbox_frame = tk.Frame(master)
-        self.checkbox_frame.pack()
+        # Фрейм для элементов управления
+        self.control_frame = tk.Frame(master)
+        self.control_frame.pack(pady=10)
 
-        self.checkboxes = []
-        for i in range(3):
-            var = tk.IntVar()
-            checkbox = tk.Checkbutton(self.checkbox_frame, text=f"Столбец {i+1}", variable=var)
-            checkbox.pack(side=tk.LEFT)
-            self.checkboxes.append(var)
-
-        # Фрейм для вывода значений
-        self.output_frame = tk.Frame(master)
-        self.output_frame.pack()
-
-        self.output_label = tk.Label(self.output_frame, text="Результат:")
-        self.output_label.pack(side=tk.LEFT)
-
-        self.output_value = tk.Label(self.output_frame, text="")
-        self.output_value.pack(side=tk.LEFT)
-
-        # Фрейм для кнопок анализа
-        self.analysis_frame = tk.Frame(master)
-        self.analysis_frame.pack()
-
-        self.mean_button = tk.Button(self.analysis_frame, text="Среднее", command=self.calculate_mean)
-        self.mean_button.pack(side=tk.LEFT)
-
-        self.min_button = tk.Button(self.analysis_frame, text="Минимум", command=self.calculate_min)
-        self.min_button.pack(side=tk.LEFT)
-
-        self.max_button = tk.Button(self.analysis_frame, text="Максимум", command=self.calculate_max)
-        self.max_button.pack(side=tk.LEFT)
-
-        # Фрейм для фильтрации
-        self.filter_frame = tk.Frame(master)
-        self.filter_frame.pack()
-
-        self.filter_label = tk.Label(self.filter_frame, text="Значение для фильтрации:")
-        self.filter_label.pack(side=tk.LEFT)
-
-        self.filter_entry = tk.Entry(self.filter_frame)
+        # Поле ввода для фильтрации
+        self.filter_entry = tk.Entry(self.control_frame)
         self.filter_entry.pack(side=tk.LEFT)
 
-        self.filter_button = tk.Button(self.filter_frame, text="Фильтрация", command=self.filter_data)
+        # Поле выбора столбца
+        self.column_combobox = ttk.Combobox(self.control_frame, values=[])
+        self.column_combobox.pack(side=tk.LEFT)
+
+        # Кнопки анализа
+        self.mean_button = tk.Button(self.control_frame, text="Среднее", command=self.calculate_mean)
+        self.mean_button.pack(side=tk.LEFT)
+        self.min_button = tk.Button(self.control_frame, text="Минимум", command=self.calculate_min)
+        self.min_button.pack(side=tk.LEFT)
+        self.max_button = tk.Button(self.control_frame, text="Максимум", command=self.calculate_max)
+        self.max_button.pack(side=tk.LEFT)
+
+        # Кнопка фильтрации
+        self.filter_button = tk.Button(self.control_frame, text="Фильтрация", command=self.filter_data)
         self.filter_button.pack(side=tk.LEFT)
 
+        # Кнопка сброса
+        self.reset_button = tk.Button(self.control_frame, text="Сброс", command=self.reset_data)
+        self.reset_button.pack(side=tk.LEFT)
+
+        # Инициализация данных
         self.data = None
+        self.filtered_data = None  # Добавлено для хранения отфильтрованных данных
 
     def load_data(self):
-        file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
+        # Открытие диалогового окна для выбора файла
+        file_path = filedialog.askopenfilename(initialdir="/", title="Выберите файл", filetypes=(("CSV files", "*.csv"), ("all files", "*.*")))
         if file_path:
+            # Загрузка данных из CSV файла
             self.data = pd.read_csv(file_path)
-            self.update_table()
+            self.filtered_data = self.data.copy()  # Инициализация filtered_data
+            self.display_data()
 
-    def update_table(self):
-        self.tree.delete(*self.tree.get_children())
-        # Отображение только первых трех столбцов
-        for i in range(min(3, len(self.data.columns))):
-            column_name = self.data.columns[i]
-            self.tree.column(f"Column{i+1}", width=100, anchor="center")
-            self.tree.heading(f"Column{i+1}", text=column_name)
-        for index, row in self.data.iterrows():
-            self.tree.insert("", tk.END, values=list(row[:3]))  # Отобразить только первые три значения
+    def display_data(self, data=None):
+        # Очистка таблицы
+        for i in self.data_tree.get_children():
+            self.data_tree.delete(i)
 
-    def get_selected_column(self):
-        for i, checkbox in enumerate(self.checkboxes):
-            if checkbox.get() == 1:
-                return i  # Возвращает индекс выбранного столбца (0, 1, 2)
-        return None  # Ни один столбец не выбран
+        # Добавление данных в таблицу
+        display_data = data if data is not None else self.filtered_data  # Используем filtered_data по умолчанию
+        for index, row in display_data.iterrows():
+            self.data_tree.insert("", tk.END, values=list(row))
+
+        # Обновление списка столбцов
+        self.column_combobox['values'] = list(self.data.columns)
 
     def calculate_mean(self):
-        column_index = self.get_selected_column()
-        if self.data is not None and column_index is not None:
-            mean_value = self.data.iloc[:, column_index].mean()
-            self.output_value.config(text=f"Среднее значение: {mean_value}")
+        if self.data is not None:
+            column = self.column_combobox.get()
+            if column:
+                mean_value = self.filtered_data[column].mean()  # Используем filtered_data
+                tk.messagebox.showinfo("Среднее значение", f"Среднее значение для столбца {column}: {mean_value}")
 
     def calculate_min(self):
-        column_index = self.get_selected_column()
-        if self.data is not None and column_index is not None:
-            min_value = self.data.iloc[:, column_index].min()
-            self.output_value.config(text=f"Минимальное значение: {min_value}")
+        if self.data is not None:
+            column = self.column_combobox.get()
+            if column:
+                min_value = self.filtered_data[column].min()  # Используем filtered_data
+                tk.messagebox.showinfo("Минимум", f"Минимальное значение для столбца {column}: {min_value}")
 
     def calculate_max(self):
-        column_index = self.get_selected_column()
-        if self.data is not None and column_index is not None:
-            max_value = self.data.iloc[:, column_index].max()
-            self.output_value.config(text=f"Максимальное значение: {max_value}")
+        if self.data is not None:
+            column = self.column_combobox.get()
+            if column:
+                max_value = self.filtered_data[column].max()  # Используем filtered_data
+                tk.messagebox.showinfo("Максимум", f"Максимальное значение для столбца {column}: {max_value}")
 
     def filter_data(self):
-        filter_value = self.filter_entry.get()
-        column_index = self.get_selected_column()
-        if self.data is not None and filter_value and column_index is not None:
-            filtered_data = self.data[self.data.iloc[:, column_index] == filter_value]
-            self.update_table()
-            self.data = filtered_data
-            self.output_value.config(text=f"Отфильтровано: {len(filtered_data)} строк")
+        if self.data is not None:
+            filter_value = self.filter_entry.get()
+            column = self.column_combobox.get()
+            if filter_value and column:
+                self.filtered_data = self.data[self.data[column].str.contains(filter_value, case=False)]  # Поиск по строке
+                self.display_data(self.filtered_data)
+
+    def reset_data(self):
+        if self.data is not None:
+            self.filtered_data = self.data.copy()  # Сброс фильтрации
+            self.display_data()
 
 root = tk.Tk()
 app = DataAnalyzer(root)
